@@ -10,37 +10,65 @@ use Illuminate\Support\Facades\Validator;
 class UserController extends Controller
 {
     # function to create user
-    public function createUser(Request $request){
-
-        # Log::info('User Data:', $request->all());
-
-        // validation
+    public function createUser(Request $request)
+    {
+        // Validation
         $validator = Validator::make($request->all(), [
             'name' => "required|string",
-            'email' => "required|string",
+            'email' => "required|string|email|unique:users,email",
             'password' => "required|string|min:6"
         ]);
 
-        if($validator->fails()){
-            return response()->json(array('status'=>false, 'message' => 'validator error', 'error_message'=> $validator->errors()), 400);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false, 
+                'message' => 'Validation error', 
+                'error_message' => $validator->errors()
+            ], 400);
         }
 
-        $user = User::create(
-            [
+        try {
+            $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => bcrypt($request->password)
-            ]
-            );
+            ]);
 
-        if($user->id){
-            $result = array('status'=>true, 'message' => 'user created', "data"=> $user);
-            $resCode = 201;
-        }else{
-            $result = array('status'=>false, 'message' => 'user not created');
-            $resCode = 401;
+            return response()->json([
+                'status' => true, 
+                'message' => 'User created', 
+                "data" => $user
+            ], 201);
+
+        } catch (QueryException $e) {
+            return response()->json([
+                'status' => false, 
+                'message' => 'Database error', 
+                'error' => $e->getMessage()
+            ], 500);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false, 
+                'message' => 'Something went wrong', 
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
 
-        return response()->json($result, $resCode);
+    public function getUsers(Request $request){
+        try{
+            $users = User::all();
+            return response()->json([
+                'status' => "success",
+                'noOfUsers' => count($users)."fetched",
+                'users' => $users
+            ], 200);
+        }
+        catch(Exception $e){
+            return response()->json([
+                'staus' => "failed",
+                'error' => $e
+            ]);
+        }
     }
 }

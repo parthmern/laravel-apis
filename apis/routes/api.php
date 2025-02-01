@@ -18,3 +18,5 @@ Route::get('/test', function(Request $request){
 
 # [controller::class, 'funcname']
 Route::post('/create-user', [UserController::class, 'createUser']);
+
+Route::get('/get-users', [UserController::class, 'getUsers']);
